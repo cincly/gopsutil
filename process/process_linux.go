@@ -124,6 +124,10 @@ func (p *Process) CwdWithContext(ctx context.Context) (string, error) {
 	return p.fillFromCwdWithContext()
 }
 
+func (p *Process) TitleWithContext(_ context.Context) (string, error) {
+	return "", common.ErrNotImplementedError
+}
+
 func (p *Process) StatusWithContext(ctx context.Context) ([]string, error) {
 	err := p.fillFromStatusWithContext(ctx)
 	if err != nil {

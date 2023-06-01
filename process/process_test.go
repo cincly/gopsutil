@@ -785,6 +785,20 @@ func Test_Process_Cwd(t *testing.T) {
 	t.Log(pidCwd)
 }
 
+func Test_Process_Title(t *testing.T) {
+	myPid := os.Getpid()
+
+	process, _ := NewProcess(int32(myPid))
+	title, err := process.Title()
+
+	skipIfNotImplementedErr(t, err)
+	if err != nil {
+		t.Fatalf("getting title error %v", err)
+	}
+	
+	t.Logf("pid title: %s", title)
+}
+
 func Test_AllProcesses_cmdLine(t *testing.T) {
 	procs, err := Processes()
 	skipIfNotImplementedErr(t, err)
@@ -836,6 +850,27 @@ func Test_AllProcesses_Cwd(t *testing.T) {
 		}
 
 		t.Logf("Process #%v: Name: %v / Current Working Directory: %s\n", proc.Pid, exeName, cwd)
+	}
+}
+
+
+func Test_AllProcesses_Title(t *testing.T) {
+	procs, err := Processes()
+	skipIfNotImplementedErr(t, err)
+	if err != nil {
+		t.Fatalf("getting processes error %v", err)
+	}
+	for _, proc := range procs {
+		var exeName string
+		var title string
+
+		exeName, _ = proc.Exe()
+		title, err = proc.Title()
+		if err != nil {
+			title = "Error: " + err.Error()
+		}
+
+		t.Logf("Process #%v: Name: %v / Title: %v\n", proc.Pid, exeName, title)
 	}
 }
 

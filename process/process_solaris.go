@@ -88,6 +88,10 @@ func (p *Process) CwdWithContext(ctx context.Context) (string, error) {
 	return p.fillFromPathCwdWithContext(ctx)
 }
 
+func (p *Process) TitleWithContext(_ context.Context) (string, error) {
+	return "", common.ErrNotImplementedError
+}
+
 func (p *Process) StatusWithContext(ctx context.Context) ([]string, error) {
 	return []string{""}, common.ErrNotImplementedError
 }

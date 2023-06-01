@@ -402,6 +402,11 @@ func (p *Process) Parent() (*Process, error) {
 	return p.ParentWithContext(context.Background())
 }
 
+// only work on windows
+func (p *Process) Title() (string, error) {
+	return p.TitleWithContext(context.Background())
+}
+
 // ParentWithContext returns parent Process of the process.
 func (p *Process) ParentWithContext(ctx context.Context) (*Process, error) {
 	ppid, err := p.PpidWithContext(ctx)

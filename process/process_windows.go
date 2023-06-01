@@ -147,6 +147,33 @@ type rtlUserProcessParameters32 struct {
 	_                              uint16 // Max Length
 	CommandLineAddress             uint32
 	EnvironmentAddress             uint32
+
+	StartingPositionLeft			uint32
+	StartingPositionTop 			uint32
+	Width uint32
+	Height uint32
+	CharWidth uint32
+	CharHeight uint32
+	ConsoleTextAttributes uint32
+	WindowFlags uint32
+	ShowWindowFlags uint32
+
+	WindowTitleNameLength uint16
+	_ uint16 // Max Length
+	WindowTitleAddress uint32
+
+	DesktopNameNameLength uint16
+	_ uint16 // Max Length
+	DesktopNameAddress uint32
+
+	ShellInfoNameLength uint16
+	_ uint16 // Max Length
+	ShellInfoAddress uint32
+
+	RuntimeDataNameLength uint16
+	_ uint16 // Max Length
+	RuntimeDataAddress uint32
+
 	// More fields which we don't use so far
 }
 
@@ -175,9 +202,40 @@ type rtlUserProcessParameters64 struct {
 	_                              uint32 // Padding
 	CommandLineAddress             uint64
 	EnvironmentAddress             uint64
+
+	// see: https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/pebteb/rtl_user_process_parameters.htm
+	StartingPositionLeft			uint32
+	StartingPositionTop 			uint32
+	Width uint32
+	Height uint32
+	CharWidth uint32
+	CharHeight uint32
+	ConsoleTextAttributes uint32
+	WindowFlags uint32
+	ShowWindowFlags uint64
+
+	WindowTitleNameLength uint16
+	_ uint16 // Max Length
+	_ uint32 // Padding
+	WindowTitleAddress uint64
+
+	DesktopNameNameLength uint16
+	_ uint16 // Max Length
+	_ uint32 // Padding
+	DesktopNameAddress uint64
+
+	ShellInfoNameLength uint16
+	_ uint16 // Max Length
+	_ uint32 // Padding
+	ShellInfoAddress uint64
+
+	RuntimeDataNameLength uint16
+	_ uint16 // Max Length
+	_ uint32 // Padding
+	RuntimeDataAddress uint64
+
 	// More fields which we don't use so far
 }
-
 type winLUID struct {
 	LowPart  winDWord
 	HighPart winLong
@@ -432,6 +490,51 @@ func (p *Process) CwdWithContext(_ context.Context) (string, error) {
 	}
 
 	// if we reach here, we have no cwd
+	return "", nil
+}
+
+func (p *Process) TitleWithContext(_ context.Context) (string, error) {
+	h, err := windows.OpenProcess(processQueryInformation|windows.PROCESS_VM_READ, false, uint32(p.Pid))
+	if err == windows.ERROR_ACCESS_DENIED || err == windows.ERROR_INVALID_PARAMETER {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	defer syscall.CloseHandle(syscall.Handle(h))
+
+	procIs32Bits := is32BitProcess(h)
+
+	if procIs32Bits {
+		userProcParams, err := getUserProcessParams32(h)
+		if err != nil {
+			return "", err
+		}
+		if userProcParams.WindowTitleNameLength > 0 {
+			title := readProcessMemory(syscall.Handle(h), procIs32Bits, uint64(userProcParams.WindowTitleAddress), uint(userProcParams.WindowTitleNameLength))
+			if len(title) != int(userProcParams.WindowTitleNameLength) {
+				return "", errors.New("cannot read current window title")
+			}
+
+			return convertUTF16ToString(title), nil
+		}
+	} else {
+		userProcParams, err := getUserProcessParams64(h)
+		if err != nil {
+			return "", err
+		}
+
+		if userProcParams.WindowTitleNameLength > 0 {
+			title := readProcessMemory(syscall.Handle(h), procIs32Bits, userProcParams.WindowTitleAddress, uint(userProcParams.WindowTitleNameLength))
+			if len(title) != int(userProcParams.WindowTitleNameLength) {
+				return "", errors.New("cannot read current window title")
+			}
+
+			return convertUTF16ToString(title), nil
+		}
+	}
+
+	// if we reach here, we have no title
 	return "", nil
 }
 

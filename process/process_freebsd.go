@@ -68,6 +68,10 @@ func (p *Process) CwdWithContext(ctx context.Context) (string, error) {
 	return "", common.ErrNotImplementedError
 }
 
+func (p *Process) TitleWithContext(_ context.Context) (string, error) {
+	return "", common.ErrNotImplementedError
+}
+
 func (p *Process) ExeWithContext(ctx context.Context) (string, error) {
 	mib := []int32{CTLKern, KernProc, KernProcPathname, p.Pid}
 	buf, _, err := common.CallSyscall(mib)
